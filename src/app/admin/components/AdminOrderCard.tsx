@@ -3,13 +3,14 @@
 import React from 'react';
 import { OrderDetails, OrderStatus } from '@/types/product';
 import { STORE_SETTINGS } from '@/data/products';
-import { MessageCircle, Printer, Trash2 } from 'lucide-react';
+import { MessageCircle, Printer, Trash2, RotateCcw } from 'lucide-react';
 
 interface AdminOrderCardProps {
   order: OrderDetails;
   onStatusChange: (order: OrderDetails, status: OrderStatus) => void;
   onSelectInvoice: (order: OrderDetails) => void;
   onDelete: (orderId: string) => void;
+  onRefund?: (order: OrderDetails) => void;
 }
 
 export function AdminOrderCard({
@@ -17,6 +18,7 @@ export function AdminOrderCard({
   onStatusChange,
   onSelectInvoice,
   onDelete,
+  onRefund,
 }: AdminOrderCardProps) {
   const handleChatCustomer = () => {
     const cleanNumber = order.phone.replace(/[^0-9]/g, '');
@@ -25,11 +27,15 @@ export function AdminOrderCard({
     const message = encodeURIComponent(
       `Hello ${order.customerName}, this is Akash from ${STORE_SETTINGS.storeName}.\n` +
       `We have received your order *${order.orderId}* (Total: ${STORE_SETTINGS.currencySymbol}${order.total}).\n` +
-      `📦 Track your order anytime: ${origin}/track?orderId=${order.orderId}\n` +
-      `We are preparing your package for express dispatch. Let us know if you need anything else!`
+      `📦 Track your order anytime: ${origin}/track?orderId=${order.orderId}`
     );
     window.open(`https://wa.me/${formatted}?text=${message}`, '_blank');
   };
+
+  const isPrepaidCancelled =
+    order.status === 'Cancelled' &&
+    order.paymentMethod === 'RAZORPAY' &&
+    order.paymentStatus === 'PAID';
 
   return (
     <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs space-y-4">
@@ -61,10 +67,21 @@ export function AdminOrderCard({
             <option value="Cancelled">🔴 Cancelled</option>
           </select>
 
+          {isPrepaidCancelled && onRefund && (
+            <button
+              onClick={() => onRefund(order)}
+              className="px-3 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs flex items-center gap-1.5 shadow-sm shadow-amber-500/20 active:scale-98 transition-all"
+              title="Trigger instant source account refund"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              <span>Issue Refund</span>
+            </button>
+          )}
+
           <button
             onClick={() => onSelectInvoice(order)}
             className="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs flex items-center gap-1.5 transition-colors"
-            title="Print / Save Tax Invoice PDF"
+            title="Print Tax Invoice PDF"
           >
             <Printer className="w-3.5 h-3.5 text-sky-600" />
             <span>Tax Invoice</span>
@@ -73,7 +90,7 @@ export function AdminOrderCard({
           <button
             onClick={handleChatCustomer}
             className="px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-sm shadow-emerald-600/20"
-            title="Send update on WhatsApp"
+            title="Send WhatsApp update"
           >
             <MessageCircle className="w-3.5 h-3.5" />
             <span>WhatsApp</span>
@@ -99,11 +116,6 @@ export function AdminOrderCard({
             <div key={idx} className="flex justify-between items-center text-slate-700">
               <span className="font-medium">
                 {item.quantity}× {item.product.name} ({item.product.unit})
-                {item.isSubscription && (
-                  <span className="ml-1.5 text-[9px] bg-teal-100 text-teal-800 px-1.5 py-0.5 rounded font-bold">
-                    Refill (15% OFF)
-                  </span>
-                )}
               </span>
               <span className="font-bold">
                 {STORE_SETTINGS.currencySymbol}{item.quantity * item.product.price}
@@ -125,11 +137,20 @@ export function AdminOrderCard({
               {order.paymentMethod}
             </span>
             <span className={`px-2 py-0.5 rounded font-bold text-[10px] ${
-              order.paymentStatus === 'PAID' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
+              order.paymentStatus === 'PAID'
+                ? 'bg-emerald-100 text-emerald-800'
+                : order.paymentStatus === 'REFUNDED'
+                ? 'bg-teal-100 text-teal-800'
+                : 'bg-amber-100 text-amber-800'
             }`}>
               {order.paymentStatus}
             </span>
-            {order.razorpayPaymentId && (
+            {order.refundId && (
+              <span className="font-mono text-[10px] text-teal-700 truncate max-w-[150px]">
+                Refund: {order.refundId}
+              </span>
+            )}
+            {order.razorpayPaymentId && !order.refundId && (
               <span className="font-mono text-[10px] text-slate-500 truncate max-w-[140px]">
                 ID: {order.razorpayPaymentId}
               </span>

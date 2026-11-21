@@ -1,7 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { Product, CartItem, OrderDetails, OrderStatus, Coupon, ProductReview } from '@/types/product';
+import { Product, CartItem, OrderDetails, OrderStatus, Coupon } from '@/types/product';
 import { INITIAL_PRODUCTS } from '@/data/products';
 import { calculateCartTotals, buildNewReview, syncOrderToBackend, validateCoupon, buildOrder } from '@/utils/cartCalculations';
 
@@ -38,19 +38,9 @@ interface CartContextType {
   isOrderSuccessOpen: boolean;
   setIsOrderSuccessOpen: (open: boolean) => void;
   updateOrderStatus: (orderId: string, status: OrderStatus) => void;
+  refundOrder: (orderId: string, refundId?: string) => void;
   deleteOrder: (orderId: string) => void;
-  createOrder: (details: {
-    customerName: string;
-    phone: string;
-    email?: string;
-    address: string;
-    city: string;
-    pincode: string;
-    paymentMethod: 'COD' | 'WHATSAPP' | 'RAZORPAY';
-    paymentStatus?: 'PAID' | 'PENDING' | 'FAILED';
-    razorpayPaymentId?: string;
-    razorpayOrderId?: string;
-  }) => OrderDetails;
+  createOrder: (details: any) => OrderDetails;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -154,6 +144,17 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const updateOrderStatus = (orderId: string, status: OrderStatus) => {
     setOrders((prev) => prev.map((o) => (o.orderId === orderId ? { ...o, status } : o)));
   };
+
+  const refundOrder = (orderId: string, refundId?: string) => {
+    setOrders((prev) =>
+      prev.map((o) =>
+        o.orderId === orderId
+          ? { ...o, paymentStatus: 'REFUNDED', refundId: refundId || `rfnd_${Date.now()}` }
+          : o
+      )
+    );
+  };
+
   const deleteOrder = (orderId: string) => setOrders((prev) => prev.filter((o) => o.orderId !== orderId));
 
   const createOrder = (details: any): OrderDetails => {
@@ -177,7 +178,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         selectedProductForModal, setSelectedProductForModal,
         totalItems, subtotal, deliveryCharge, freeDeliveryRemaining, total, totalSavings,
         orders, lastOrder, isOrderSuccessOpen, setIsOrderSuccessOpen,
-        updateOrderStatus, deleteOrder, createOrder,
+        updateOrderStatus, refundOrder, deleteOrder, createOrder,
       }}
     >
       {children}

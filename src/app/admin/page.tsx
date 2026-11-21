@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/context/AuthContext';
 import { OrderStatus, OrderDetails } from '@/types/product';
+import { apiIssueRefund } from '@/utils/paymentApi';
 import { InvoiceModal } from '@/components/InvoiceModal';
 import { AdminNavbar } from './components/AdminNavbar';
 import { AdminMetricsBar } from './components/AdminMetricsBar';
@@ -19,7 +20,7 @@ import { Package, Sparkles, AlertTriangle, Tag } from 'lucide-react';
 export default function AdminDashboardPage() {
   const router = useRouter();
   const { isAdmin, logout } = useAuth();
-  const { orders, updateOrderStatus, deleteOrder, products, addProduct, updateProduct, resetProducts } = useCart();
+  const { orders, updateOrderStatus, refundOrder, deleteOrder, products, addProduct, updateProduct, resetProducts } = useCart();
 
   const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false);
   const [activeTab, setActiveTab] = useState<'orders' | 'products' | 'lowstock' | 'coupons'>('orders');
@@ -47,6 +48,33 @@ export default function AdminDashboardPage() {
       if (confirm(`Order status updated to ${newStatus}. Send instant WhatsApp dispatch to ${order.customerName}?`)) {
         window.open(`https://wa.me/${formatted}?text=${msg}`, '_blank');
       }
+    }
+  };
+
+  const handleRefundOrder = async (order: OrderDetails) => {
+    if (!confirm(`Issue instant refund of ₹${order.total} for cancelled order ${order.orderId} to customer's source account?`)) {
+      return;
+    }
+    const paymentId = order.razorpayPaymentId || `pay_sim_${order.orderId}`;
+    const res = await apiIssueRefund({
+      payment_id: paymentId,
+      amount: order.total,
+      order_id: order.orderId,
+      notes: { reason: 'Admin cancellation refund' },
+    });
+
+    if (res.status === 'success') {
+      refundOrder(order.orderId, res.refund_id);
+      const cleanNumber = order.phone.replace(/[^0-9]/g, '');
+      const formatted = cleanNumber.startsWith('91') ? cleanNumber : `91${cleanNumber}`;
+      const msg = encodeURIComponent(
+        `Hello ${order.customerName}! ✨ Your refund of ₹${order.total} for order *${order.orderId}* has been issued to your source account (Ref: ${res.refund_id || 'Processed'}).`
+      );
+      if (confirm(`Refund initiated successfully! (ID: ${res.refund_id || 'Processed'}). Send WhatsApp refund confirmation to ${order.customerName}?`)) {
+        window.open(`https://wa.me/${formatted}?text=${msg}`, '_blank');
+      }
+    } else {
+      alert(`Refund failed: ${res.message || 'Unknown error'}`);
     }
   };
 
@@ -124,6 +152,7 @@ export default function AdminDashboardPage() {
             onStatusChange={handleStatusChange}
             onSelectInvoice={(ord) => setSelectedOrderForInvoice(ord)}
             onDelete={deleteOrder}
+            onRefund={handleRefundOrder}
           />
         )}
 
