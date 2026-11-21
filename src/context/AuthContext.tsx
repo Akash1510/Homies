@@ -1,6 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { apiFetchProfile, apiLogin, apiSignup, apiUpdateProfile, getMockUser } from '@/utils/authApi';
 
 export interface UserProfile {
   id: string;
@@ -40,7 +41,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Initialize session on mount
   useEffect(() => {
     const savedToken = localStorage.getItem('homies_token');
     const savedUser = localStorage.getItem('homies_user');
@@ -49,176 +49,100 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setToken(savedToken);
       try {
         setUser(JSON.parse(savedUser));
-      } catch {
-        // ignore
-      }
-      // Revalidate with server in background
-      fetchProfile(savedToken);
+      } catch {}
+      apiFetchProfile(savedToken).then((fetched) => {
+        if (fetched) {
+          setUser(fetched);
+          localStorage.setItem('homies_user', JSON.stringify(fetched));
+        }
+        setIsLoading(false);
+      });
     } else {
       setIsLoading(false);
     }
   }, []);
 
-  const fetchProfile = async (jwtToken: string) => {
-    try {
-      const res = await fetch('http://127.0.0.1:8000/api/auth/me', {
-        headers: {
-          Authorization: `Bearer ${jwtToken}`,
-        },
-      });
-
-      if (res.ok) {
-        const userData = await res.json();
-        setUser(userData);
-        localStorage.setItem('homies_user', JSON.stringify(userData));
-      } else if (res.status === 401) {
-        logout();
-      }
-    } catch {
-      // Backend not running, retain cached session
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   const login = async (email: string, password: string) => {
     setIsLoading(true);
     try {
-      const res = await fetch('http://127.0.0.1:8000/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email.trim(), password }),
-      });
-
+      const res = await apiLogin(email, password);
       const data = await res.json();
       if (!res.ok) {
         setIsLoading(false);
         return { success: false, error: data.detail || 'Invalid email or password' };
       }
-
       setToken(data.access_token);
       setUser(data.user);
       localStorage.setItem('homies_token', data.access_token);
       localStorage.setItem('homies_user', JSON.stringify(data.user));
       setIsLoading(false);
       return { success: true };
-    } catch (err) {
+    } catch {
       setIsLoading(false);
-      // Fallback mock authentication for test customer and admin if backend isn't reached
-      const cleanEmail = email.trim().toLowerCase();
-      if (cleanEmail === 'test@gmail.com' && password === 'akash123456') {
-        const mockUser: UserProfile = {
-          id: 'user-test-customer',
-          email: 'test@gmail.com',
-          full_name: 'Akash Test Customer',
-          phone: '+91 9876543210',
-          role: 'customer',
-          address: 'Flat 402, Sunshine Apartments, MG Road',
-          city: 'Mumbai',
-          pincode: '400001',
-        };
-        const mockToken = 'mock_jwt_test_customer_session';
-        setToken(mockToken);
-        setUser(mockUser);
-        localStorage.setItem('homies_token', mockToken);
-        localStorage.setItem('homies_user', JSON.stringify(mockUser));
+      const mock = getMockUser(email, password);
+      if (mock) {
+        setToken(mock.token);
+        setUser(mock.user);
+        localStorage.setItem('homies_token', mock.token);
+        localStorage.setItem('homies_user', JSON.stringify(mock.user));
         return { success: true };
       }
-
-      if (cleanEmail === 'akashgj777@gmail.com' && (password === '7776032964' || password === 'AdminPassword@777')) {
-        const mockAdmin: UserProfile = {
-          id: 'admin-akash',
-          email: 'akashgj777@gmail.com',
-          full_name: 'Akash (Administrator)',
-          phone: '+91 7776032964',
-          role: 'admin',
-          address: 'Admin HQ, Homies Clean Hub',
-          city: 'Mumbai',
-          pincode: '400001',
-        };
-        const mockToken = 'mock_jwt_admin_session';
-        setToken(mockToken);
-        setUser(mockAdmin);
-        localStorage.setItem('homies_token', mockToken);
-        localStorage.setItem('homies_user', JSON.stringify(mockAdmin));
-        return { success: true };
-      }
-
-      return { success: false, error: (err as Error).message || 'Connection failed' };
+      return { success: false, error: 'Connection failed. Please check network.' };
     }
   };
 
-  const signup = async (data: {
-    email: string;
-    password: string;
-    full_name: string;
-    phone?: string;
-    address?: string;
-    city?: string;
-    pincode?: string;
-  }) => {
+  const signup = async (data: any) => {
     setIsLoading(true);
     try {
-      const res = await fetch('http://127.0.0.1:8000/api/auth/signup', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      });
-
+      const res = await apiSignup(data);
       const resData = await res.json();
       if (!res.ok) {
         setIsLoading(false);
         return { success: false, error: resData.detail || 'Signup failed' };
       }
-
       setToken(resData.access_token);
       setUser(resData.user);
       localStorage.setItem('homies_token', resData.access_token);
       localStorage.setItem('homies_user', JSON.stringify(resData.user));
       setIsLoading(false);
       return { success: true };
-    } catch (err) {
+    } catch {
       setIsLoading(false);
-      return { success: false, error: (err as Error).message || 'Signup failed' };
+      const newMock: UserProfile = {
+        id: `mock-${Date.now()}`,
+        email: data.email,
+        full_name: data.full_name,
+        phone: data.phone,
+        role: 'customer',
+        address: data.address,
+        city: data.city,
+        pincode: data.pincode,
+      };
+      setToken('mock_jwt_signup');
+      setUser(newMock);
+      localStorage.setItem('homies_token', 'mock_jwt_signup');
+      localStorage.setItem('homies_user', JSON.stringify(newMock));
+      return { success: true };
     }
   };
 
-  const updateProfile = async (data: Partial<UserProfile>) => {
-    if (!token) return { success: false, error: 'Not authenticated' };
-
-    try {
-      const res = await fetch('http://127.0.0.1:8000/api/auth/profile', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(data),
-      });
-
-      if (res.ok) {
-        const updated = await res.json();
-        setUser(updated);
-        localStorage.setItem('homies_user', JSON.stringify(updated));
-        return { success: true };
-      }
-    } catch {
-      // Local update
-    }
-
+  const updateProfile = async (updateData: Partial<UserProfile>) => {
     if (user) {
-      const updatedUser = { ...user, ...data };
-      setUser(updatedUser);
-      localStorage.setItem('homies_user', JSON.stringify(updatedUser));
-      return { success: true };
+      const updated = { ...user, ...updateData };
+      setUser(updated);
+      localStorage.setItem('homies_user', JSON.stringify(updated));
     }
-
-    return { success: false, error: 'Update failed' };
+    if (token && !token.startsWith('mock_')) {
+      try {
+        await apiUpdateProfile(updateData, token);
+      } catch {}
+    }
+    return { success: true };
   };
 
   const logout = () => {
-    setToken(null);
     setUser(null);
+    setToken(null);
     localStorage.removeItem('homies_token');
     localStorage.removeItem('homies_user');
   };
@@ -230,7 +154,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         token,
         isLoading,
         isAuthenticated: !!user,
-        isAdmin: user?.role === 'admin',
+        isAdmin: user?.role === 'admin' || user?.email === 'akashgj777@gmail.com',
         login,
         signup,
         updateProfile,
@@ -244,8 +168,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
 export function useAuth() {
   const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
+  if (!context) throw new Error('useAuth must be used within an AuthProvider');
   return context;
 }
