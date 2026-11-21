@@ -23,7 +23,8 @@ app = FastAPI(
 # CORS Middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # Allows development from frontend localhost:3000
+    allow_origins=settings.get_cors_origins(),
+    allow_origin_regex=settings.CORS_ORIGIN_REGEX,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -51,7 +52,7 @@ async def health_check():
     return {
         "status": "healthy",
         "database": "connected (MongoDB Atlas)" if db_manager.is_connected else "local in-memory fallback",
-        "environment": "development"
+        "environment": settings.ENVIRONMENT
     }
 
 if __name__ == "__main__":

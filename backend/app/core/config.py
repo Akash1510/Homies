@@ -23,17 +23,33 @@ class Settings(BaseSettings):
     ADMIN_PHONE: str = os.getenv("ADMIN_PHONE", "+91 7776032964")
     ADMIN_INITIAL_PASSWORD: str = os.getenv("ADMIN_INITIAL_PASSWORD", "AdminPassword@777")
     
+    # Environment
+    ENVIRONMENT: str = os.getenv("ENVIRONMENT", "development")
+    
     # Razorpay
     RAZORPAY_KEY_ID: str = os.getenv("RAZORPAY_KEY_ID", "rzp_test_HomiesDemoKey")
     RAZORPAY_KEY_SECRET: str = os.getenv("RAZORPAY_KEY_SECRET", "rzp_secret_HomiesDemoSecret")
     RAZORPAY_WEBHOOK_SECRET: str = os.getenv("RAZORPAY_WEBHOOK_SECRET", "rzp_webhook_HomiesSecret")
 
-    # CORS
-    CORS_ORIGINS: List[str] = [
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
-        "https://checkout.razorpay.com",
-    ]
+    # Vercel preview deployments regex
+    CORS_ORIGIN_REGEX: str = r"^https:\/\/homies-.*\.vercel\.app$"
+
+    def get_cors_origins(self) -> List[str]:
+        verified_prod_domains = [
+            "https://homiesclean.com",
+            "https://www.homiesclean.com",
+            "https://homies-gilt.vercel.app",
+            "https://checkout.razorpay.com",
+        ]
+        if self.ENVIRONMENT.lower() == "development":
+            dev_domains = [
+                "http://localhost:3000",
+                "http://127.0.0.1:3000",
+                "http://localhost:3001",
+                "http://127.0.0.1:3001",
+            ]
+            return verified_prod_domains + dev_domains
+        return verified_prod_domains
 
     class Config:
         case_sensitive = True
