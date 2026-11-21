@@ -8,10 +8,11 @@ export async function POST(req: Request) {
 
     const keyId = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || process.env.RAZORPAY_KEY_ID || 'rzp_test_HomiesDemoKey';
     const keySecret = process.env.RAZORPAY_KEY_SECRET || 'rzp_secret_HomiesDemoSecret';
+    const apiBase = process.env.NEXT_PUBLIC_API_URL || process.env.API_URL || 'http://127.0.0.1:8000';
 
     // Attempt calling FastAPI backend first if available
     try {
-      const backendRes = await fetch('http://127.0.0.1:8000/api/payment/razorpay/create-order', {
+      const backendRes = await fetch(`${apiBase}/api/payment/razorpay/create-order`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ amount, currency: 'INR', receipt: body.receipt }),
