@@ -10,6 +10,50 @@ export async function apiFetchProfile(jwtToken: string): Promise<UserProfile | n
   return res.json();
 }
 
+export async function apiRefreshToken(
+  refreshToken: string
+): Promise<{ access_token: string; refresh_token: string; user?: UserProfile } | null> {
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/auth/refresh`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refresh_token: refreshToken }),
+    });
+    if (!res.ok) return null;
+    return res.json();
+  } catch {
+    return null;
+  }
+}
+
+export async function apiFetchProfileWithRefresh(
+  jwtToken: string,
+  refreshToken?: string | null,
+  onTokenRotated?: (newAccessToken: string, newRefreshToken: string) => void
+): Promise<UserProfile | null> {
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/auth/me`, {
+      headers: { Authorization: `Bearer ${jwtToken}` },
+    });
+
+    if (res.status === 401 && refreshToken) {
+      const refreshed = await apiRefreshToken(refreshToken);
+      if (refreshed) {
+        if (onTokenRotated) {
+          onTokenRotated(refreshed.access_token, refreshed.refresh_token);
+        }
+        return apiFetchProfile(refreshed.access_token);
+      }
+      return null;
+    }
+
+    if (!res.ok) return null;
+    return res.json();
+  } catch {
+    return null;
+  }
+}
+
 export async function apiLogin(email: string, password: string) {
   return fetch(`${API_BASE_URL}/api/auth/login`, {
     method: 'POST',

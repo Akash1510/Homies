@@ -13,10 +13,11 @@ class Settings(BaseSettings):
     MONGODB_URL: str = os.getenv("MONGODB_URL", "mongodb://127.0.0.1:27017")
     MONGODB_DB_NAME: str = os.getenv("MONGODB_DB_NAME", "homies")
     
-    # Security
+    # Security & JWT Tokens
     SECRET_KEY: str = os.getenv("SECRET_KEY", "homies_clean_super_jwt_secret_token_2026")
     ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7 # 7 days
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30 # Short-lived access token: 30 minutes
+    REFRESH_TOKEN_EXPIRE_DAYS: int = 30 # Long-lived refresh token: 30 days
     
     # Admin Credentials
     ADMIN_EMAIL: str = os.getenv("ADMIN_EMAIL", "akashgj777@gmail.com")

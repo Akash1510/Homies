@@ -1,7 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { apiFetchProfile, apiLogin, apiSignup, apiUpdateProfile, getMockUser } from '@/utils/authApi';
+import { apiFetchProfileWithRefresh, apiLogin, apiSignup, apiUpdateProfile, getMockUser } from '@/utils/authApi';
 
 export interface UserProfile {
   id: string;
@@ -43,6 +43,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const savedToken = localStorage.getItem('homies_token');
+    const savedRefreshToken = localStorage.getItem('homies_refresh_token');
     const savedUser = localStorage.getItem('homies_user');
 
     if (savedToken && savedUser) {
@@ -50,10 +51,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         setUser(JSON.parse(savedUser));
       } catch {}
-      apiFetchProfile(savedToken).then((fetched) => {
+      apiFetchProfileWithRefresh(savedToken, savedRefreshToken, (newTok, newRef) => {
+        setToken(newTok);
+        localStorage.setItem('homies_token', newTok);
+        localStorage.setItem('homies_refresh_token', newRef);
+      }).then((fetched) => {
         if (fetched) {
           setUser(fetched);
           localStorage.setItem('homies_user', JSON.stringify(fetched));
+        } else if (!savedToken.startsWith('mock_')) {
+          logout();
         }
         setIsLoading(false);
       });
@@ -74,6 +81,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setToken(data.access_token);
       setUser(data.user);
       localStorage.setItem('homies_token', data.access_token);
+      if (data.refresh_token) {
+        localStorage.setItem('homies_refresh_token', data.refresh_token);
+      }
       localStorage.setItem('homies_user', JSON.stringify(data.user));
       setIsLoading(false);
       return { success: true };
@@ -103,6 +113,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setToken(resData.access_token);
       setUser(resData.user);
       localStorage.setItem('homies_token', resData.access_token);
+      if (resData.refresh_token) {
+        localStorage.setItem('homies_refresh_token', resData.refresh_token);
+      }
       localStorage.setItem('homies_user', JSON.stringify(resData.user));
       setIsLoading(false);
       return { success: true };
@@ -144,6 +157,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(null);
     setToken(null);
     localStorage.removeItem('homies_token');
+    localStorage.removeItem('homies_refresh_token');
     localStorage.removeItem('homies_user');
   };
 
