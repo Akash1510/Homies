@@ -22,12 +22,12 @@ class OrderCreate(BaseModel):
     delivery_charge: float = 0.0
     discount: float = 0.0
     total: float
-    payment_method: str = "WHATSAPP" # "RAZORPAY", "WHATSAPP", "COD"
+    payment_method: str = "WHATSAPP"
     razorpay_payment_id: Optional[str] = None
     razorpay_order_id: Optional[str] = None
 
 class OrderStatusUpdate(BaseModel):
-    status: str # "Pending", "Confirmed", "Processing", "Shipped", "Delivered", "Cancelled"
+    status: str
 
 class OrderResponse(BaseModel):
     id: str
@@ -49,10 +49,11 @@ class OrderResponse(BaseModel):
     status: str
     razorpay_payment_id: Optional[str] = None
     razorpay_order_id: Optional[str] = None
+    refund_id: Optional[str] = None
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
 class RazorpayCreateOrderRequest(BaseModel):
-    amount: float # in rupees
+    amount: float
     currency: str = "INR"
     receipt: Optional[str] = None
 
@@ -60,3 +61,9 @@ class RazorpayVerifyRequest(BaseModel):
     razorpay_order_id: str
     razorpay_payment_id: str
     razorpay_signature: str
+
+class RazorpayRefundRequest(BaseModel):
+    payment_id: str
+    amount: Optional[float] = None  # In INR (None = full refund)
+    order_id: Optional[str] = None
+    notes: Optional[dict] = None

@@ -10,6 +10,7 @@ interface AdminOrdersTabProps {
   onStatusChange: (order: OrderDetails, status: OrderStatus) => void;
   onSelectInvoice: (order: OrderDetails) => void;
   onDelete: (orderId: string) => void;
+  onRefund?: (order: OrderDetails) => void;
 }
 
 export function AdminOrdersTab({
@@ -17,6 +18,7 @@ export function AdminOrdersTab({
   onStatusChange,
   onSelectInvoice,
   onDelete,
+  onRefund,
 }: AdminOrdersTabProps) {
   const [orderFilter, setOrderFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -80,6 +82,7 @@ export function AdminOrdersTab({
               onStatusChange={onStatusChange}
               onSelectInvoice={onSelectInvoice}
               onDelete={onDelete}
+              onRefund={onRefund}
             />
           ))}
         </div>

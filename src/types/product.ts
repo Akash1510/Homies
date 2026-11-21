@@ -9,7 +9,7 @@ export type ProductCategory =
 export interface ProductReview {
   id: string;
   userName: string;
-  rating: number; // 1 to 5
+  rating: number;
   date: string;
   comment: string;
   verifiedBuyer: boolean;
@@ -22,12 +22,12 @@ export interface Product {
   categoryLabel: string;
   price: number;
   originalPrice: number;
-  unit: string; // e.g. "1 Litre", "Pack of 2", "1 Piece"
+  unit: string;
   rating: number;
   reviewsCount: number;
-  tag?: string; // "Bestseller", "Save 25%", "Popular"
+  tag?: string;
   inStock: boolean;
-  stockCount: number; // e.g. 4 (triggers low stock warning when <= 5)
+  stockCount: number;
   image: string;
   additionalImages?: string[];
   description: string;
@@ -40,8 +40,8 @@ export interface Product {
 export interface CartItem {
   product: Product;
   quantity: number;
-  isSubscription?: boolean; // Subscribe & Save 15%
-  subscriptionDays?: number; // e.g. 30 days
+  isSubscription?: boolean;
+  subscriptionDays?: number;
 }
 
 export type OrderStatus = 'Pending' | 'Confirmed' | 'Processing' | 'Shipped' | 'Delivered' | 'Cancelled';
@@ -49,7 +49,7 @@ export type OrderStatus = 'Pending' | 'Confirmed' | 'Processing' | 'Shipped' | '
 export interface Coupon {
   code: string;
   discountType: 'percentage' | 'fixed';
-  discountValue: number; // e.g. 50 (₹50) or 20 (20%)
+  discountValue: number;
   minOrderAmount: number;
   description: string;
 }
@@ -70,9 +70,10 @@ export interface OrderDetails {
   couponDiscount?: number;
   total: number;
   paymentMethod: 'COD' | 'WHATSAPP' | 'RAZORPAY';
-  paymentStatus: 'PAID' | 'PENDING' | 'FAILED';
+  paymentStatus: 'PAID' | 'PENDING' | 'FAILED' | 'REFUNDED';
   status: OrderStatus;
   razorpayPaymentId?: string;
   razorpayOrderId?: string;
+  refundId?: string;
   createdAt: string;
 }
