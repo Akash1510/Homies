@@ -142,22 +142,29 @@ async def razorpay_webhook(
     event_type = event.get("event")
     payload_data = event.get("payload", {})
 
-    # Handle payment.captured
-    if event_type == "payment.captured":
+    # Handle payment success (payment.captured or order.paid)
+    if event_type in ("payment.captured", "order.paid"):
         payment_entity = payload_data.get("payment", {}).get("entity", {})
-        rzp_order_id = payment_entity.get("order_id")
+        order_entity = payload_data.get("order", {}).get("entity", {})
+        rzp_order_id = payment_entity.get("order_id") or order_entity.get("id")
         rzp_payment_id = payment_entity.get("id")
 
         if rzp_order_id and db_manager.is_connected and db_manager.db is not None:
+            update_fields = {"payment_status": "PAID", "status": "Confirmed"}
+            if rzp_payment_id:
+                update_fields["razorpay_payment_id"] = rzp_payment_id
             await db_manager.db.orders.update_one(
                 {"razorpay_order_id": rzp_order_id},
-                {
-                    "$set": {
-                        "payment_status": "PAID",
-                        "status": "Confirmed",
-                        "razorpay_payment_id": rzp_payment_id
-                    }
-                }
+                {"$set": update_fields}
+            )
+
+    elif event_type == "payment.failed":
+        payment_entity = payload_data.get("payment", {}).get("entity", {})
+        rzp_order_id = payment_entity.get("order_id")
+        if rzp_order_id and db_manager.is_connected and db_manager.db is not None:
+            await db_manager.db.orders.update_one(
+                {"razorpay_order_id": rzp_order_id},
+                {"$set": {"payment_status": "FAILED"}}
             )
 
     return {"status": "received", "event": event_type}
