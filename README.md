@@ -1,36 +1,57 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Homies Clean - Direct-to-Consumer Home Hygiene Store
 
-## Getting Started
+**Homies Clean** is a modern e-commerce web platform for household cleaning supplies (floor cleaners, mops & squeegees, toilet cleaners, and value combos), featuring WhatsApp ordering, Razorpay online payments, local MongoDB Atlas data persistence, and an interactive Admin Control Center.
 
-First, run the development server:
+---
 
+## 🚀 Quick Start
+
+### 1. Frontend (Next.js 16 + Tailwind CSS)
 ```bash
+# Install dependencies
+npm install
+
+# Start development server
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
+Open [http://localhost:3000](http://localhost:3000) to view the storefront.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 2. Backend (FastAPI + MongoDB)
+```bash
+# Activate virtual environment
+source backend/venv/bin/activate
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+# Start FastAPI server
+PYTHONPATH=. uvicorn backend.app.main:app --host 0.0.0.0 --port 8000 --reload
+```
+Interactive API documentation is available at [http://localhost:8000/docs](http://localhost:8000/docs).
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+---
 
-## Learn More
+## 🔑 Key Roles & Credentials
 
-To learn more about Next.js, take a look at the following resources:
+- **Store Owner & Admin**: **Akash** (`akashgj777@gmail.com` / `+91 7776032964`)
+- **Admin Hub**: [http://localhost:3000/admin](http://localhost:3000/admin) *(PIN: `7776032964`)*
+- **Test Customer**: `test@gmail.com` / `akash123456`
+- **Order Tracker**: [http://localhost:3000/track](http://localhost:3000/track)
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+---
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## 📦 Features
 
-## Deploy on Vercel
+- **Standard Checkout & WhatsApp Order**: Razorpay online gateway with instant 1-click fallback to WhatsApp (+91 7776032964) or Cash on Delivery.
+- **In-Basket Login Gate**: Shimmering skeleton loaders prevent layout shift; shoppers can log in with 1 click without losing basket contents, auto-filling delivery addresses.
+- **Promo Code Engine**: `HOMIES50`, `CLEAN20`, `FIRST10` coupon codes with live basket discounts.
+- **Pincode Delivery Estimator**: 6-digit Indian PIN checker identifying Express Metro delivery zones.
+- **Verified Reviews & Ratings**: Verified buyer feedback with live review submission form.
+- **Printable Tax Invoices**: GST tax invoice generator with 1-click PDF print.
+- **Live Visual Order Tracking**: 5-stage milestone tracking timeline.
+- **In-Admin Image & Product Uploader**: Direct upload to `/public/products/` and instant live product publishing.
+- **Low-Stock Urgency Badges**: Urgency warnings on storefront when inventory $\le 5$ with an admin restock monitor.
+- **Subscribe & Save**: 15% discount on recurring monthly cleaning supply refills.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+---
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## 📖 Complete Documentation
+
+See [DOCUMENTATION.md](DOCUMENTATION.md) for full architectural diagrams, MongoDB schemas, and operational runbooks.
