@@ -1,9 +1,10 @@
 "use client";
 
 import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useCart } from '@/context/CartContext';
-import { STORE_SETTINGS } from '@/data/products';
-import { OrderStatus, Product, OrderDetails } from '@/types/product';
+import { useAuth } from '@/context/AuthContext';
+import { OrderStatus, OrderDetails } from '@/types/product';
 import { InvoiceModal } from '@/components/InvoiceModal';
 import { AdminNavbar } from './components/AdminNavbar';
 import { AdminMetricsBar } from './components/AdminMetricsBar';
@@ -16,12 +17,16 @@ import { AdminCouponsTab } from './components/AdminCouponsTab';
 import { Package, Sparkles, AlertTriangle, Tag } from 'lucide-react';
 
 export default function AdminDashboardPage() {
+  const router = useRouter();
+  const { isAdmin, logout } = useAuth();
   const { orders, updateOrderStatus, deleteOrder, products, addProduct, updateProduct, resetProducts } = useCart();
 
   const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false);
   const [activeTab, setActiveTab] = useState<'orders' | 'products' | 'lowstock' | 'coupons'>('orders');
   const [selectedOrderForInvoice, setSelectedOrderForInvoice] = useState<OrderDetails | null>(null);
   const [showAddProduct, setShowAddProduct] = useState(false);
+
+  const isAuthorized = isAdmin || isAdminLoggedIn;
 
   const totalRevenue = orders.reduce((sum, o) => sum + o.total, 0);
   const pendingOrders = orders.filter((o) => o.status === 'Pending' || o.status === 'Confirmed').length;
@@ -45,13 +50,19 @@ export default function AdminDashboardPage() {
     }
   };
 
-  if (!isAdminLoggedIn) {
+  const handleLogout = () => {
+    setIsAdminLoggedIn(false);
+    logout();
+    router.push('/login');
+  };
+
+  if (!isAuthorized) {
     return <AdminLoginGate onSuccess={() => setIsAdminLoggedIn(true)} />;
   }
 
   return (
     <div className="min-h-screen bg-slate-100 flex flex-col">
-      <AdminNavbar onLogout={() => setIsAdminLoggedIn(false)} />
+      <AdminNavbar onLogout={handleLogout} />
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
         <AdminMetricsBar
