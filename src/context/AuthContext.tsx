@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { apiFetchProfileWithRefresh, apiLogin, apiSignup, apiUpdateProfile, getMockUser } from '@/utils/authApi';
+import { setAuthCookie, removeAuthCookie } from '@/utils/cookieUtils';
 
 export interface UserProfile {
   id: string;
@@ -21,15 +22,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isAdmin: boolean;
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
-  signup: (data: {
-    email: string;
-    password: string;
-    full_name: string;
-    phone?: string;
-    address?: string;
-    city?: string;
-    pincode?: string;
-  }) => Promise<{ success: boolean; error?: string }>;
+  signup: (data: any) => Promise<{ success: boolean; error?: string }>;
   updateProfile: (data: Partial<UserProfile>) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
 }
@@ -48,11 +41,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     if (savedToken && savedUser) {
       setToken(savedToken);
+      setAuthCookie(savedToken);
       try {
         setUser(JSON.parse(savedUser));
       } catch {}
       apiFetchProfileWithRefresh(savedToken, savedRefreshToken, (newTok, newRef) => {
         setToken(newTok);
+        setAuthCookie(newTok);
         localStorage.setItem('homies_token', newTok);
         localStorage.setItem('homies_refresh_token', newRef);
       }).then((fetched) => {
@@ -80,10 +75,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       setToken(data.access_token);
       setUser(data.user);
+      setAuthCookie(data.access_token);
       localStorage.setItem('homies_token', data.access_token);
-      if (data.refresh_token) {
-        localStorage.setItem('homies_refresh_token', data.refresh_token);
-      }
+      if (data.refresh_token) localStorage.setItem('homies_refresh_token', data.refresh_token);
       localStorage.setItem('homies_user', JSON.stringify(data.user));
       setIsLoading(false);
       return { success: true };
@@ -93,6 +87,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (mock) {
         setToken(mock.token);
         setUser(mock.user);
+        setAuthCookie(mock.token);
         localStorage.setItem('homies_token', mock.token);
         localStorage.setItem('homies_user', JSON.stringify(mock.user));
         return { success: true };
@@ -112,10 +107,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       setToken(resData.access_token);
       setUser(resData.user);
+      setAuthCookie(resData.access_token);
       localStorage.setItem('homies_token', resData.access_token);
-      if (resData.refresh_token) {
-        localStorage.setItem('homies_refresh_token', resData.refresh_token);
-      }
+      if (resData.refresh_token) localStorage.setItem('homies_refresh_token', resData.refresh_token);
       localStorage.setItem('homies_user', JSON.stringify(resData.user));
       setIsLoading(false);
       return { success: true };
@@ -133,6 +127,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       };
       setToken('mock_jwt_signup');
       setUser(newMock);
+      setAuthCookie('mock_jwt_signup');
       localStorage.setItem('homies_token', 'mock_jwt_signup');
       localStorage.setItem('homies_user', JSON.stringify(newMock));
       return { success: true };
@@ -156,6 +151,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = () => {
     setUser(null);
     setToken(null);
+    removeAuthCookie();
     localStorage.removeItem('homies_token');
     localStorage.removeItem('homies_refresh_token');
     localStorage.removeItem('homies_user');
