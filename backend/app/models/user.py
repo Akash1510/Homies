@@ -35,7 +35,11 @@ class UserResponse(UserBase):
     id: str
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
+class RefreshTokenRequest(BaseModel):
+    refresh_token: str
+
 class Token(BaseModel):
     access_token: str
+    refresh_token: Optional[str] = None
     token_type: str = "bearer"
-    user: UserResponse
+    user: Optional[UserResponse] = None
