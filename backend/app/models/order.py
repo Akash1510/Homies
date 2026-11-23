@@ -50,6 +50,8 @@ class OrderResponse(BaseModel):
     razorpay_payment_id: Optional[str] = None
     razorpay_order_id: Optional[str] = None
     refund_id: Optional[str] = None
+    invoice_url: Optional[str] = None
+    invoice_number: Optional[str] = None
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
 class RazorpayCreateOrderRequest(BaseModel):

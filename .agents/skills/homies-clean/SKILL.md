@@ -210,6 +210,9 @@ npm run build
 
 # 3. Start FastAPI Backend (Port 8000)
 PYTHONPATH=. backend/venv/bin/uvicorn backend.app.main:app --host 0.0.0.0 --port 8000 --reload
+
+# 4. Start RabbitMQ Consumer Workers Daemon
+PYTHONPATH=. backend/venv/bin/python -m backend.app.consumers.runner --workers all
 ```
 
 ### Adding Real Product Photos:

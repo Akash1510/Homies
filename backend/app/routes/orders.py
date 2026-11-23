@@ -4,6 +4,7 @@ from typing import List, Optional
 from fastapi import APIRouter, HTTPException, status, Query
 from backend.app.db.mongodb import db_manager, memory_db
 from backend.app.models.order import OrderCreate, OrderResponse, OrderStatusUpdate
+from backend.app.producers.events import emit_order_created
 
 router = APIRouter(prefix="/orders", tags=["Orders"])
 
@@ -55,6 +56,9 @@ async def create_order(order_in: OrderCreate):
         await db_manager.db.orders.insert_one(order_dict)
     else:
         memory_db["orders"][internal_id] = order_dict
+
+    # Asynchronously emit lightweight event to RabbitMQ pipeline (< 5ms)
+    await emit_order_created(order_dict)
 
     return OrderResponse(**order_dict)
 
