@@ -32,6 +32,22 @@ class Settings(BaseSettings):
     RAZORPAY_KEY_SECRET: str = os.getenv("RAZORPAY_KEY_SECRET", "rzp_secret_HomiesDemoSecret")
     RAZORPAY_WEBHOOK_SECRET: str = os.getenv("RAZORPAY_WEBHOOK_SECRET", "rzp_webhook_HomiesSecret")
 
+    # RabbitMQ Message Broker & Queues
+    RABBITMQ_URL: str = os.getenv("RABBITMQ_URL", "amqp://guest:guest@localhost:5672/")
+    RABBITMQ_EXCHANGE: str = "homies.events"
+    RABBITMQ_DLX_EXCHANGE: str = "homies.dlx"
+    QUEUE_ORDERS: str = "queue:orders"
+    QUEUE_PAYMENTS: str = "queue:payments"
+    QUEUE_NOTIFICATIONS: str = "queue:notifications"
+    QUEUE_DEAD_LETTER: str = "queue:dead_letter"
+    RABBITMQ_MAX_RETRIES: int = 3
+    RABBITMQ_POOL_SIZE: int = 10
+    WHATSAPP_RATE_LIMIT_PER_SEC: float = 10.0
+
+    # Business Invoicing
+    STORE_GSTIN: str = os.getenv("STORE_GSTIN", "27AABCH1234F1Z5")
+    INVOICE_STORAGE_DIR: str = os.getenv("INVOICE_STORAGE_DIR", "public/invoices")
+
     # Vercel preview deployments regex
     CORS_ORIGIN_REGEX: str = r"^https:\/\/homies-.*\.vercel\.app$"
 

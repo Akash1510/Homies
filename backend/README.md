@@ -15,6 +15,15 @@ Fast, modern, asynchronous REST API for the **Homies Clean** Home Hygiene E-Comm
 - **Payment Gateway (Razorpay)**:
   - Server-side order creation (`/api/payment/razorpay/create-order`).
   - Signature verification (`/api/payment/razorpay/verify`).
+- **RabbitMQ Maximum Output Event Pipeline**:
+  - Ultra-fast non-blocking event publishing (< 5ms response time on webhook & checkout).
+  - Durable Topic Exchange (`homies.events`) and Dead Letter Exchange (`homies.dlx`).
+  - Dedicated queues: `queue:orders`, `queue:payments`, `queue:notifications`, `queue:dead_letter`.
+  - Independent background worker daemon (`backend/app/consumers/runner.py`).
+  - Automated GST-compliant PDF Tax Invoice generator via ReportLab.
+  - Rate-limited WhatsApp dispatch worker (Token Bucket).
+  - Exponential backoff retry and poisoned message DLQ forwarding.
+  - Real-time queue monitoring at `/api/queue/stats`.
 - **Order Tracking & Admin APIs**:
   - Status updates (`Pending` -> `Confirmed` -> `Processing` -> `Shipped` -> `Delivered`).
   - Customer contact via WhatsApp integration.
@@ -57,7 +66,21 @@ RAZORPAY_KEY_SECRET="..."
 uvicorn backend.app.main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
+### 4. Run RabbitMQ Background Consumer Workers
+In a separate terminal or service supervisor:
+```bash
+# Run all background workers concurrently
+python -m backend.app.consumers.runner --workers all
+
+# Or run sharded workers individually:
+python -m backend.app.consumers.runner --workers orders
+python -m backend.app.consumers.runner --workers payments
+python -m backend.app.consumers.runner --workers notifications
+python -m backend.app.consumers.runner --workers dlq
+```
+
 Interactive API documentation will be available at:
 - Swagger UI: **http://localhost:8000/docs**
+- Queue Metrics: **http://localhost:8000/api/queue/stats**
 - ReDoc: **http://localhost:8000/redoc**
 - Health check: **http://localhost:8000/api/health**

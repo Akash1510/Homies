@@ -1,21 +1,26 @@
+import os
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from backend.app.core.config import settings
 from backend.app.db.mongodb import connect_to_mongodb, close_mongodb_connection
-from backend.app.routes import auth, orders, products, payment
+from backend.app.producers.rabbitmq import mq_producer
+from backend.app.routes import auth, orders, products, payment, queue
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup: Connect to MongoDB Atlas
+    # Startup: Connect to MongoDB Atlas & RabbitMQ Event Broker
     await connect_to_mongodb()
+    await mq_producer.connect()
     yield
-    # Shutdown: Close DB connection
+    # Shutdown: Cleanly close pools and connections
+    await mq_producer.close()
     await close_mongodb_connection()
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
-    description="Full-stack FastAPI backend for Homies Clean ecommerce app with MongoDB Atlas and Razorpay payment integration.",
+    description="Full-stack FastAPI backend for Homies Clean ecommerce app with MongoDB Atlas, Razorpay payments, and RabbitMQ event pipeline.",
     version="1.0.0",
     lifespan=lifespan
 )
@@ -30,11 +35,16 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Mount Invoices static files directory for direct PDF download
+os.makedirs("public/invoices", exist_ok=True)
+app.mount("/invoices", StaticFiles(directory="public/invoices"), name="invoices")
+
 # Include Routers
 app.include_router(auth.router, prefix=settings.API_V1_STR)
 app.include_router(orders.router, prefix=settings.API_V1_STR)
 app.include_router(products.router, prefix=settings.API_V1_STR)
 app.include_router(payment.router, prefix=settings.API_V1_STR)
+app.include_router(queue.router, prefix=settings.API_V1_STR)
 
 @app.get("/")
 async def root():
